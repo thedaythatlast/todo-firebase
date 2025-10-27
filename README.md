@@ -10,14 +10,8 @@ It uses **Tailwind CSS** for utility-first styling and **Material UI (MUI)** for
 - 🎨 **Tailwind CSS** — Utility-first CSS framework  
 - 🧩 **Material UI (MUI)** — React UI component library  
 
-## Getting Started
+(This repository includes Firebase integration, codes which include sensitive information have been censored - you have to modify those codes for your own Firebase and Google Cloud. For the buildable version without Firebase, check out https://github.com/thedaythatlast/todo)
 
-1. Install dependencies:
-  bash
-  npm install
+# Deployment
 
-2. Run the development server:
-  npm run dev
-
-3. Build for production:
-  npm run build 
+https://todo-b088e.web.app/

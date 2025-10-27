@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect} from 'react'
+import { createRoot } from 'react-dom/client';
 import './App.css'
 
 // MUI
@@ -9,6 +10,28 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 // libraries so i can add some drag and drop
 
+// FIREBASE :)
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getDatabase, ref, set, get, child } from "firebase/database";
+import { getAuth, GoogleAuthProvider, signInWithCredential, signOut, setPersistence, browserLocalPersistence, onAuthStateChanged  } from "firebase/auth";
+
+const firebaseConfig = {
+  apiKey: "<censored>",
+  authDomain: "<censored>",
+  projectId: "<censored>",
+  storageBucket: "<censored>",
+  messagingSenderId: "<censored>",
+  appId: "<censored>",
+  measurementId: "<censored>",
+  databaseURL: "<censored>",
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const database = getDatabase(app);
+
 
 function Field() {
   const inputRef = useRef(''); // to beam input to the screen (or html)
@@ -18,6 +41,11 @@ function Field() {
   //const [count, setCount] = useState(0); // id for each todo line
   const [todoPressed, setTodoPressed] = useState(-1); // state for whether a todo line is pressed or not
   const colorVarDefault = "text-[#D6FFD8]"; // default color for each submitted text
+
+  const [current_id, set_cid] = useState(-1);
+
+  const [hideSignIn, setHideSignIn] = useState('');
+  const [hideSignOut, setHideSignOut] = useState('hidden');
 
   // 3 colors buttons
   // button for deleting
@@ -36,7 +64,6 @@ function Field() {
               ));
             setTodoPressed(-1);
           }}
-          
         > 
         Green
         </Button>
@@ -52,7 +79,6 @@ function Field() {
               ));
             setTodoPressed(-1);
           }}
-          
         > 
         Red
         </Button>
@@ -77,9 +103,10 @@ function Field() {
           onClick={(e) => {
             e.stopPropagation();
             setTodo((prev) => prev.filter(NewTodo => NewTodo.id !== TargetID));
+            const index = todo.findIndex(todo => todo.id === TargetID);
+            deleteUserData(current_id, index);
             setTodoPressed(-1);
           }}
-          sx = {{backgroundColor: ''}}
           aria-label="delete" color="info"
         > 
           <DeleteIcon />
@@ -89,25 +116,121 @@ function Field() {
     </div>
   );
 
+  
+
   // --- VVV this is to load data from localstorage VVV ---
   useEffect(() => {
     const loadTodo = JSON.parse(localStorage.getItem('todo'));
     if (loadTodo == null) return;
     if (loadTodo.length != 0) setTodo(loadTodo);
+
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("User still signed in:", user);
+      set_cid(user.uid);
+      setHideSignIn('hidden');
+      setHideSignOut('');
+    } else {
+      console.log("No user signed in");
+      set_cid(-1);
+      setHideSignIn('');
+      setHideSignOut('hidden');
+    }
+  });
+
+  return () => unsubscribe();
   },[]);
   
   // --- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ---
-
 
   // beam data to the screen whenver the button clicked
   const handleClick = () => {
     if (inputRef.current?.value === "") return;
     setTodo((prev) => [...prev, {id: Date.now(), color: colorVarDefault, text: inputRef.current?.value}]);
-    //setCount(prev => prev + 1);
   };
 
+  // firebase authenticator
+
+  
+  useEffect(() => {
+    if (window.google && current_id === -1) {
+      window.google.accounts.id.initialize({
+        client_id: "<censored>",
+        callback: handleCredentialResponse,
+      });
+      
+      const container = document.getElementById("sign-in");
+      if (container) {
+        window.google.accounts.id.renderButton(
+          container,
+          { theme: "outline", size: "large" }
+        );
+      }
+    }  
+  }, [current_id]);
+
+  // database writing and reading
+  const writeUserData = (userId) => {
+    const db = getDatabase();
+    set(ref(db, 'users/' + userId), {
+      todo : todo
+    });
+  }
+  const deleteUserData = (userId, index) => {
+    const db = getDatabase();
+    set(ref(db, `users/${userId}/todo/${index}/`), null);
+  }
+  const readUserData = (userId) => {
+    const dbRef = ref(getDatabase());
+    get(child(dbRef, `users/${userId}`)).then((snapshot) => {
+    if (snapshot.exists()) {
+      setTodo(snapshot.val().todo);
+    } else {
+      console.log("No data available");
+    }
+    }).catch((error) => {
+      console.error(error);
+  });}
+
+  // authenticate, then get email
+  const handleCredentialResponse = (response) => {
+    setHideSignIn('hidden');
+    setHideSignOut('');
+
+    const auth = getAuth();
+    const googleCredential = GoogleAuthProvider.credential(response.credential);
+
+    signInWithCredential(auth, googleCredential)
+    .then((result) => {
+      const user = result.user;     
+      set_cid(user.uid);
+      readUserData(user.uid);
+    })
+    .catch((error) => {
+      // Handle errors
+      console.error("Firebase Sign-In Error:", error);
+    });
+  };
+
+  // sign out
+  const log_out = () => {
+    const auth = getAuth();
+
+    signOut(auth).then(() => {
+      console.log('Sign-out successful.')
+    }).catch((error) => {
+      console.error(error)
+    });
+
+    set_cid(-1);
+    setHideSignIn('');
+    setHideSignOut('hidden');
+  };
   
 
+  // scroll bottom + clean input when enter (whenveer something added to todo)
+  // also save data to localstorage
   useEffect(() => {
     // scroll bottom whenever a new thing added
     if (todoRef.current) {
@@ -117,8 +240,9 @@ function Field() {
 
     // save data to localstorage whenever a new thing added
     localStorage.setItem('todo', JSON.stringify(todo));
-    console.log(localStorage);
-
+    if (current_id != -1) {
+      writeUserData(current_id);
+    }
   }, [todo]);
 
   const LinePressed = (id_of_line) => {
@@ -142,12 +266,9 @@ function Field() {
 
     window.addEventListener("keydown", detectKeyBoardButton);
     window.addEventListener("mousedown", detectMouseButton);
-    
-
     return () => {
       window.removeEventListener("keydown", detectKeyBoardButton);
-      window.removeEventListener("mousedown", detectMouseButton);
-      
+      window.removeEventListener("mousedown", detectMouseButton);     
     }
   }, [handleClick]); 
 
@@ -172,6 +293,10 @@ function Field() {
       </div>
       ))
     }
+    </div>
+    <div id="sign-in" className={`fixed top-1 right-1 ${hideSignIn}`}></div> 
+    <div className={`fixed top-1 right-1 ${hideSignOut}`}>
+      <Button variant="contained" onClick={log_out}>Sign-out</Button>
     </div>
 
     <div className="flex fixed left-1 bottom-2 right-1 h-[8.2dvh]" >

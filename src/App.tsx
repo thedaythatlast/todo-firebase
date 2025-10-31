@@ -19,14 +19,13 @@ import { getAuth, GoogleAuthProvider, signInWithCredential, signOut, setPersiste
 const firebaseConfig = {
   apiKey: "<censored>",
   authDomain: "<censored>",
+  databaseURL: "<censored>",
   projectId: "<censored>",
   storageBucket: "<censored>",
   messagingSenderId: "<censored>",
   appId: "<censored>",
-  measurementId: "<censored>",
-  databaseURL: "<censored>",
+  measurementId: "<censored>"
 };
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
@@ -38,7 +37,6 @@ function Field() {
   const todoRef = useRef(''); // to make sure the todo is always scrolled to bottom
   
   const [todo, setTodo] = useState([]); // beam the data to the variable 'todo', which in turn beam to the html
-  //const [count, setCount] = useState(0); // id for each todo line
   const [todoPressed, setTodoPressed] = useState(-1); // state for whether a todo line is pressed or not
   const colorVarDefault = "text-[#D6FFD8]"; // default color for each submitted text
 
@@ -127,7 +125,7 @@ function Field() {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
     if (user) {
-      console.log("User still signed in:", user);
+      console.log("User still signed in");
       set_cid(user.uid);
       setHideSignIn('hidden');
       setHideSignOut('');
@@ -156,7 +154,7 @@ function Field() {
   useEffect(() => {
     if (window.google && current_id === -1) {
       window.google.accounts.id.initialize({
-        client_id: "<censored>",
+        client_id: "588...<censored>",
         callback: handleCredentialResponse,
       });
       

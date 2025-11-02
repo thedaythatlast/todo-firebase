@@ -26,23 +26,23 @@ It uses **Tailwind CSS** for utility-first styling and **Material UI (MUI)** for
 
 # Pre-building prerequisite
 
-Add the following credential.tsx file in the folder ./src/ and modify it accordingly:
-'''
+Add the file credential.tsx in your ./src/ folder with the following and modify them accordingly:
+```
 // go to your Firebase project => project settings => copy the info of the firebaseConfig and paste here 
 export const firebaseConfig = {
-  apiKey: "<censored>",
-  authDomain: "<censored>",
-  databaseURL: "<censored>",
-  projectId: "<censored>",
-  storageBucket: "<censored>",
-  messagingSenderId: "<censored>",
-  appId: "<censored>",
-  measurementId: "<censored>"
+  apiKey: "<insert_your_own_info>",
+  authDomain: "<insert_your_own_info>",
+  databaseURL: "<insert_your_own_info>",
+  projectId: "<insert_your_own_info>",
+  storageBucket: "<insert_your_own_info>",
+  messagingSenderId: "<insert_your_own_info>",
+  appId: "<insert_your_own_info>",
+  measurementId: "<insert_your_own_info>"
 };
 
 // get the client_id from Google Cloud's Clients -> OAuth 2.0 Client IDs -> Client ID of the authenticator
-export const CLIENT_ID = "<censored>"
-'''
+export const CLIENT_ID = "<insert_your_own_info>"
+```
 
 ## Deployment
 

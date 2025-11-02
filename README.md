@@ -16,7 +16,6 @@ It uses **Tailwind CSS** for utility-first styling and **Material UI (MUI)** for
 
 1. Install dependencies:
   ```
-  bash
   npm install
   ```
 

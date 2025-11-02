@@ -12,19 +12,25 @@ It uses **Tailwind CSS** for utility-first styling and **Material UI (MUI)** for
 
 (This repository includes Firebase integration, codes which include sensitive information have been censored - if you build this you have to modify the codes for your own Firebase and Google Cloud. For the buildable version without Firebase, check out https://github.com/thedaythatlast/todo)
 
-## Getting Started
+# Getting Started
 
 1. Install dependencies:
+  ```
   bash
   npm install
+  ```
 
 2. Run the development server:
+  ```
   npm run dev
+  ```
 
 3. Build for production:
+  ```
   npm run build
+  ```
 
-# Pre-building prerequisite
+## Pre-building prerequisite
 
 Add the file credential.tsx in your ./src/ folder with the following and modify them accordingly:
 ```

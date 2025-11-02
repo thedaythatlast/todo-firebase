@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect} from 'react'
 import { createRoot } from 'react-dom/client';
 import './App.css'
+import { firebaseConfig, CLIENT_ID } from './credential.tsx'
 
 // MUI
 
@@ -16,16 +17,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getDatabase, ref, set, get, child } from "firebase/database";
 import { getAuth, GoogleAuthProvider, signInWithCredential, signOut, setPersistence, browserLocalPersistence, onAuthStateChanged  } from "firebase/auth";
 
-const firebaseConfig = {
-  apiKey: "<censored>",
-  authDomain: "<censored>",
-  databaseURL: "<censored>",
-  projectId: "<censored>",
-  storageBucket: "<censored>",
-  messagingSenderId: "<censored>",
-  appId: "<censored>",
-  measurementId: "<censored>"
-};
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
@@ -44,6 +36,8 @@ function Field() {
 
   const [hideSignIn, setHideSignIn] = useState('');
   const [hideSignOut, setHideSignOut] = useState('hidden');
+
+  const [authLoading, setLoaded] = useState(0); // to ask if it's loaded yet. if it is then change variable so the button stuff can re render
 
   // 3 colors buttons
   // button for deleting
@@ -116,24 +110,26 @@ function Field() {
 
   
 
-  // --- VVV this is to load data from localstorage VVV ---
+  // check if you are signed in or not. if yes, set current_id, and hide the one tap, show the sign out button. vice versa otherwise.
   useEffect(() => {
-    const loadTodo = JSON.parse(localStorage.getItem('todo'));
-    if (loadTodo == null) return;
-    if (loadTodo.length != 0) setTodo(loadTodo);
-
-    const auth = getAuth();
+    const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
     if (user) {
       console.log("User still signed in");
       set_cid(user.uid);
       setHideSignIn('hidden');
       setHideSignOut('');
+
     } else {
       console.log("No user signed in");
       set_cid(-1);
       setHideSignIn('');
       setHideSignOut('hidden');
+
+      // load data to localstorage
+      const loadTodo = JSON.parse(localStorage.getItem('todo'));
+      if (loadTodo == null) return;
+      if (loadTodo.length != 0) setTodo(loadTodo);
     }
   });
 
@@ -154,7 +150,7 @@ function Field() {
   useEffect(() => {
     if (window.google && current_id === -1) {
       window.google.accounts.id.initialize({
-        client_id: "588...<censored>",
+        client_id: CLIENT_ID,
         callback: handleCredentialResponse,
       });
       

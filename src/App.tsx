@@ -1,19 +1,19 @@
 import { useState, useRef, useEffect} from 'react'
 import './App.css'
-import { firebaseConfig, CLIENT_ID } from './credential.tsx'
+import { firebaseConfig, CLIENT_ID } from './credential' // credentials
+import { LineButton } from './ColorButtons'
 
 // MUI
 
 import Button from '@mui/material/Button';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import DeleteIcon from '@mui/icons-material/Delete';
 
 // libraries so i can add some drag and drop
 
 // FIREBASE :)
+import { writeUserData, readUserData} from './Database';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase, ref, set, get, child } from "firebase/database";
 import { getAuth, GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged  } from "firebase/auth";
 
 
@@ -37,72 +37,7 @@ function Field() {
 
   // 3 colors buttons
   // button for deleting
-  const LineButton = (TargetID) => (
-    <div className="absolute content-center bottom-[100%] z-1">
-      <div className="flex gap-1">
-        <Button
-          variant="contained" 
-          color="success"
-          onClick={(e) => {
-            e.stopPropagation();
-            setTodo((prev) => prev.map(NewTodo => 
-              NewTodo.id === TargetID
-              ? { ...NewTodo, color: colorVarDefault } 
-              : NewTodo
-              ));
-            setTodoPressed(-1);
-          }}
-        > 
-        Green
-        </Button>
-        <Button 
-          variant="contained" 
-          color="error"
-          onClick={(e) => {
-            e.stopPropagation();
-            setTodo((prev) => prev.map(NewTodo => 
-              NewTodo.id === TargetID
-              ? { ...NewTodo, color: 'text-red-500' } 
-              : NewTodo
-              ));
-            setTodoPressed(-1);
-          }}
-        > 
-        Red
-        </Button>
-
-        <Button 
-          variant="contained" 
-          color="warning"
-          onClick={(e) => {
-            e.stopPropagation();
-            setTodo((prev) => prev.map(NewTodo => 
-              NewTodo.id === TargetID
-              ? { ...NewTodo, color: 'text-yellow-500' } 
-              : NewTodo
-              ));
-            setTodoPressed(-1);
-          }} 
-        > 
-        Golden
-        </Button>
-        <Button 
-          variant="contained"
-          onClick={(e) => {
-            e.stopPropagation();
-            setTodo((prev) => prev.filter(NewTodo => NewTodo.id !== TargetID));
-            const index = todo.findIndex(todo => todo.id === TargetID);
-            deleteUserData(current_id, index);
-            setTodoPressed(-1);
-          }}
-          aria-label="delete" color="info"
-        > 
-          <DeleteIcon />
-          Delete
-        </Button>
-      </div>
-    </div>
-  );
+  
 
   
 
@@ -120,7 +55,7 @@ function Field() {
       set_cid(user.uid);
       setHideSignIn('hidden');
       setHideSignOut('');
-      readUserData(user.uid);
+      readUserData(user.uid, setTodo);
     } else {
       console.log("No user signed in");
       set_cid(-1);
@@ -160,28 +95,7 @@ function Field() {
     }  
   }, [current_id]);
 
-  // database writing and reading
-  const writeUserData = (userId) => {
-    const db = getDatabase();
-    set(ref(db, 'users/' + userId), {
-      todo : todo
-    });
-  }
-  const deleteUserData = (userId, index) => {
-    const db = getDatabase();
-    set(ref(db, `users/${userId}/todo/${index}/`), null);
-  }
-  const readUserData = (userId) => {
-    const dbRef = ref(getDatabase());
-    get(child(dbRef, `users/${userId}`)).then((snapshot) => {
-    if (snapshot.exists()) {
-      setTodo(snapshot.val().todo);
-    } else {
-      console.log("No data available");
-    }
-    }).catch((error) => {
-      console.error(error);
-  });}
+  
 
   // authenticate, then get email
   const handleCredentialResponse = (response) => {
@@ -195,7 +109,6 @@ function Field() {
     .then((result) => {
       const user = result.user;     
       set_cid(user.uid);
-      //readUserData(user.uid);
     })
     .catch((error) => {
       // Handle errors
@@ -231,7 +144,7 @@ function Field() {
     // save data to localstorage whenever a new thing added
     localStorage.setItem('todo', JSON.stringify(todo));
     if (current_id != -1) {
-      writeUserData(current_id);
+      writeUserData(current_id, todo);
     }
   }, [todo]);
 
@@ -279,7 +192,7 @@ function Field() {
         tabIndex={0}>
         - {item.text}
 
-        {todoPressed == item.id ? LineButton(item.id) : null}
+        {todoPressed == item.id ? LineButton(item.id, todo, setTodo, setTodoPressed, current_id, colorVarDefault) : null}
       </div>
       ))
     }
@@ -306,9 +219,7 @@ function App() {
 
   return (
     <>
-    <div>
       <Field />
-    </div>
     </>
   )
 }

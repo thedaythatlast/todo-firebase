@@ -108,6 +108,11 @@ function Field() {
 
   // check if you are signed in or not. if yes, set current_id, and hide the one tap, show the sign out button. vice versa otherwise.
   useEffect(() => {
+    // load data to localstorage
+    const loadTodo = JSON.parse(localStorage.getItem('todo'));
+    if (loadTodo == null) return;
+    if (loadTodo.length != 0) setTodo(loadTodo);
+
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -121,11 +126,6 @@ function Field() {
       set_cid(-1);
       setHideSignIn('');
       setHideSignOut('hidden');
-
-      // load data to localstorage
-      const loadTodo = JSON.parse(localStorage.getItem('todo'));
-      if (loadTodo == null) return;
-      if (loadTodo.length != 0) setTodo(loadTodo);
     }
   });
 

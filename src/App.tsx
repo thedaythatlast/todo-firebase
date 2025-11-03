@@ -120,7 +120,7 @@ function Field() {
       set_cid(user.uid);
       setHideSignIn('hidden');
       setHideSignOut('');
-
+      readUserData(user.uid);
     } else {
       console.log("No user signed in");
       set_cid(-1);
@@ -195,7 +195,7 @@ function Field() {
     .then((result) => {
       const user = result.user;     
       set_cid(user.uid);
-      readUserData(user.uid);
+      //readUserData(user.uid);
     })
     .catch((error) => {
       // Handle errors

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect} from 'react'
-import { createRoot } from 'react-dom/client';
 import './App.css'
 import { firebaseConfig, CLIENT_ID } from './credential.tsx'
 
@@ -15,13 +14,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getDatabase, ref, set, get, child } from "firebase/database";
-import { getAuth, GoogleAuthProvider, signInWithCredential, signOut, setPersistence, browserLocalPersistence, onAuthStateChanged  } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged  } from "firebase/auth";
 
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+const analytics = getAnalytics(app); // has yet to be used, although the point is to get some analytical data
 
 
 function Field() {
@@ -36,8 +34,6 @@ function Field() {
 
   const [hideSignIn, setHideSignIn] = useState('');
   const [hideSignOut, setHideSignOut] = useState('hidden');
-
-  const [authLoading, setLoaded] = useState(0); // to ask if it's loaded yet. if it is then change variable so the button stuff can re render
 
   // 3 colors buttons
   // button for deleting

@@ -1,34 +1,39 @@
 import { useState, useRef, useEffect} from 'react'
 import './App.css'
-import { firebaseConfig, CLIENT_ID } from './credential' // credentials
-import { LineButton } from './ColorButtons'
+
+// logic of the submit button
+import { handleClick } from './ButtonLogic'
+// EventHandling
+import { InputHandling } from './EventHandling'
 
 // MUI
-
 import Button from '@mui/material/Button';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+// UI
+import * as UI from './UI'
+
 
 // libraries so i can add some drag and drop
 
 // FIREBASE :)
-import { writeUserData, readUserData} from './Database';
+import { writeUserData } from './Database'; // database interacting operations
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged  } from "firebase/auth";
+//import { getAnalytics } from "firebase/analytics";
+import { firebaseConfig } from './credential' // credentials
+import { authenticate, initButton} from './Authenticate'
 
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app); // has yet to be used, although the point is to get some analytical data
+//const analytics = getAnalytics(app); // has yet to be used, although the point is to get some analytical data
 
 
-function Field() {
+function App() {
   const inputRef = useRef(''); // to beam input to the screen (or html)
   const todoRef = useRef(''); // to make sure the todo is always scrolled to bottom
   
   const [todo, setTodo] = useState([]); // beam the data to the variable 'todo', which in turn beam to the html
   const [todoPressed, setTodoPressed] = useState(-1); // state for whether a todo line is pressed or not
-  const colorVarDefault = "text-[#D6FFD8]"; // default color for each submitted text
 
   const [current_id, set_cid] = useState(-1);
 
@@ -42,96 +47,14 @@ function Field() {
   
 
   // check if you are signed in or not. if yes, set current_id, and hide the one tap, show the sign out button. vice versa otherwise.
+  useEffect(() => authenticate(app, setTodo, set_cid, setHideSignIn, setHideSignOut),[]);
+
+  //initialize google authentication and create sign-in button
   useEffect(() => {
-    // load data to localstorage
-    const loadTodo = JSON.parse(localStorage.getItem('todo'));
-    if (loadTodo == null) return;
-    if (loadTodo.length != 0) setTodo(loadTodo);
-
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("User still signed in");
-      set_cid(user.uid);
-      setHideSignIn('hidden');
-      setHideSignOut('');
-      readUserData(user.uid, setTodo);
-    } else {
-      console.log("No user signed in");
-      set_cid(-1);
-      setHideSignIn('');
-      setHideSignOut('hidden');
-    }
-  });
-
-  return () => unsubscribe();
-  },[]);
-  
-  // --- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ---
-
-  // beam data to the screen whenver the button clicked
-  const handleClick = () => {
-    if (inputRef.current?.value === "") return;
-    setTodo((prev) => [...prev, {id: Date.now(), color: colorVarDefault, text: inputRef.current?.value}]);
-  };
-
-  // firebase authenticator
-
-  
-  useEffect(() => {
-    if (window.google && current_id === -1) {
-      window.google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: handleCredentialResponse,
-      });
-      
-      const container = document.getElementById("sign-in");
-      if (container) {
-        window.google.accounts.id.renderButton(
-          container,
-          { theme: "outline", size: "large" }
-        );
-      }
-    }  
+    initButton(app, setTodo, set_cid, setHideSignIn, setHideSignOut, current_id);  
   }, [current_id]);
 
   
-
-  // authenticate, then get email
-  const handleCredentialResponse = (response) => {
-    setHideSignIn('hidden');
-    setHideSignOut('');
-
-    const auth = getAuth();
-    const googleCredential = GoogleAuthProvider.credential(response.credential);
-
-    signInWithCredential(auth, googleCredential)
-    .then((result) => {
-      const user = result.user;     
-      set_cid(user.uid);
-    })
-    .catch((error) => {
-      // Handle errors
-      console.error("Firebase Sign-In Error:", error);
-    });
-  };
-
-  // sign out
-  const log_out = () => {
-    const auth = getAuth();
-
-    signOut(auth).then(() => {
-      console.log('Sign-out successful.')
-    }).catch((error) => {
-      console.error(error)
-    });
-
-    set_cid(-1);
-    setHideSignIn('');
-    setHideSignOut('hidden');
-  };
-  
-
   // scroll bottom + clean input when enter (whenveer something added to todo)
   // also save data to localstorage
   useEffect(() => {
@@ -148,78 +71,37 @@ function Field() {
     }
   }, [todo]);
 
-  const LinePressed = (id_of_line) => {
-      setTodoPressed(id_of_line);
-    };
+  
 
   // event handling for pressing enter on keyboard
   useEffect(() => {
-    const detectKeyBoardButton = (e) => { 
-      // ignore metakeys (like ctrl)
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      if (e.key === "Enter") handleClick(); // submit button when pressed 'enter'
-      else if (e.key.length === 1) inputRef.current.focus(); // input field focused when press any key at all
-    };
-
-    const detectMouseButton = (e) => { 
-      if (e.target.closest('button')) return;
-      setTodoPressed(-1);
-    };
-
-    window.addEventListener("keydown", detectKeyBoardButton);
-    window.addEventListener("mousedown", detectMouseButton);
-    return () => {
-      window.removeEventListener("keydown", detectKeyBoardButton);
-      window.removeEventListener("mousedown", detectMouseButton);     
-    }
+    InputHandling(inputRef, setTodoPressed, setTodo);
   }, [handleClick]); 
 
   // html UI, enough said
   return (
     <>
-    <div className="fixed top-1 left-1 text-left h-[90dvh] overflow-y-auto w-[100%] text-[28px]" ref={todoRef}>
-    TODO:
-    { 
-      todo.map((item) => (
-      <div 
-        className={`relative flex items-start ${item.color}
-        wrap-anywhere text-pretty
-        hover:bg-[#414D62] focus:bg-[#414D62] active:shadow-inner
-        text-[24px]
-        `} 
-        key={item.id} onClick={() => LinePressed(item.id)}
-        tabIndex={0}>
-        - {item.text}
-
-        {todoPressed == item.id ? LineButton(item.id, todo, setTodo, setTodoPressed, current_id, colorVarDefault) : null}
-      </div>
-      ))
-    }
-    </div>
-    <div id="sign-in" className={`fixed top-1 right-1 ${hideSignIn}`}></div> 
-    <div className={`fixed top-1 right-1 ${hideSignOut}`}>
-      <Button variant="contained" onClick={log_out}>Sign-out</Button>
-    </div>
+    <UI.Todo 
+      todoRef={todoRef} 
+      todo={todo} setTodo={setTodo} 
+      setTodoPressed={setTodoPressed} todoPressed={todoPressed} 
+      current_id={current_id}
+    />
+    <UI.SignInOut 
+      hideSignIn={hideSignIn} hideSignOut={hideSignOut} 
+      setHideSignIn={setHideSignIn} setHideSignOut={setHideSignOut} 
+      set_cid={set_cid} 
+    />
 
     <div className="flex fixed left-1 bottom-2 right-1 h-[8.2dvh]" >
       <input ref={inputRef} type="text" 
         className="w-full h-full 
         text-[#D6FFD8] 
         border-2 border-[#D6FFD8] rounded-md bg-transparent px-2 box-border outline-none focus:border-[#D6FFD8]"/>
-      <Button variant="contained" onClick={handleClick} className="">
+      <Button variant="contained" onClick={() => handleClick(inputRef, setTodo)} className="">
         <PlayArrowIcon />
       </Button>
     </div>
-    </>
-  )
-}
-
-function App() {
-
-  return (
-    <>
-      <Field />
     </>
   )
 }
